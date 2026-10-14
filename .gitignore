@@ -1,0 +1,24 @@
+# Build output
+bin/
+obj/
+*.zip
+
+# Rider / JetBrains
+.idea/
+*.sln.DotSettings.user
+*.user
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+
+# NuGet
+*.nupkg
+packages/
+
+# macOS
+.DS_Store
+
+# Local secrets (never commit these)
+.env
+appsettings.Development.json

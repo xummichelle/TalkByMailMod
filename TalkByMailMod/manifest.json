@@ -1,0 +1,19 @@
+{
+  "Name": "Talk By Mail Mod",
+  "Author": "meeelle",
+  "Version": "1.0.0",
+  "Description": "A mod that lets you send mail to NPC's and receive smart responses back based on your message.",
+  "UniqueID": "meeelle.TalkByMailMod",
+  "EntryDll": "TalkByMailMod.dll",
+  "UpdateKeys": [],
+  "Dependencies": [
+    {
+      "UniqueID": "DIGUS.MailFrameworkMod",
+      "MinimumVersion": "1.20.0"
+    },
+    {
+      "UniqueID": "focustense.StardewUI",
+      "MinimumVersion": "0.6.0"
+    }
+  ]
+}
