@@ -1,7 +1,10 @@
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
+using StardewUI.Graphics;
 using StardewValley;
 using StardewValley.Menus;
-using xTile.Dimensions;
+using TalkByMailMod.UI;
 
 namespace TalkByMailMod;
 
@@ -17,7 +20,8 @@ public class MailOverrides
             return true;
         }
 
-        Game1.activeClickableMenu = new MailCreateMenu();
+        var letterBackground = new Sprite(Game1.content.Load<Texture2D>("LooseSprites\\letterBG"), new Rectangle(0, 0, 320, 180));
+        Game1.activeClickableMenu = MailComposeMenu.Create(new MailComposeViewModel(letterBackground));
         // skip the rest of the mail method
         return false;
     }

@@ -3,8 +3,6 @@ using System.ClientModel;
 using System.Collections.Generic;
 using System.Linq;
 using Azure.AI.OpenAI;
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -27,10 +25,6 @@ public class MailCreateMenu : IClickableMenu
     private ClickableTextureComponent DoneButton;
     private ClickableTextureComponent RecipientButton;
     private string _selectedRecipient = null;
-    /// <summary>The Azure OpenAI key, cached after the first Key Vault lookup.</summary>
-    private static string? _openAiKey;
-    private static string? _openAiEndpoint;
-    private static string? _openAiDeploymentName;
 
     public MailCreateMenu()
         : base((Game1.uiViewport.Width / 2) - (_UIWidth / 2), (Game1.uiViewport.Height / 2) - (_UIHeight / 2), _UIWidth,
@@ -74,81 +68,6 @@ public class MailCreateMenu : IClickableMenu
 
     }
     
-    /// <summary>Get the Azure OpenAI key from Key Vault, signing in with the local Azure login (e.g. az login).</summary>
-    private static async Task<string> GetOpenAiKeyAsync()
-    {
-        if (_openAiKey != null)
-            return _openAiKey;
-
-        var settings = ModEntry.ModHelper.Data.ReadJsonFile<AppSettings>("appsettings.json")
-                       ?? throw new InvalidOperationException("appsettings.json was not found in the mod folder.");
-        var secretClient = new SecretClient(new Uri(settings.KeyVault.VaultUri), new DefaultAzureCredential());
-        KeyVaultSecret secret = await secretClient.GetSecretAsync(settings.KeyVault.OpenAiKeySecretName);
-        _openAiKey = secret.Value;
-        return _openAiKey;
-    }
-    
-    private static async Task<string> GetOpenAiEndpointAsync()
-    {
-        if (_openAiEndpoint != null)
-            return _openAiEndpoint;
-
-        var settings = ModEntry.ModHelper.Data.ReadJsonFile<AppSettings>("appsettings.json")
-                       ?? throw new InvalidOperationException("appsettings.json was not found in the mod folder.");
-        var secretClient = new SecretClient(new Uri(settings.KeyVault.VaultUri), new DefaultAzureCredential());
-        KeyVaultSecret secret = await secretClient.GetSecretAsync(settings.KeyVault.OpenAiEndpointSecretName);
-        _openAiEndpoint = secret.Value;
-        return _openAiEndpoint;
-    }
-    
-    private static async Task<string> GetOpenAiDeploymentNameAsync()
-    {
-        if (_openAiDeploymentName != null)
-            return _openAiDeploymentName;
-
-        var settings = ModEntry.ModHelper.Data.ReadJsonFile<AppSettings>("appsettings.json")
-                       ?? throw new InvalidOperationException("appsettings.json was not found in the mod folder.");
-        var secretClient = new SecretClient(new Uri(settings.KeyVault.VaultUri), new DefaultAzureCredential());
-        KeyVaultSecret secret = await secretClient.GetSecretAsync(settings.KeyVault.OpenAiDeploymentNameSecretName);
-        _openAiDeploymentName = secret.Value;
-        return _openAiDeploymentName;
-    }
-
-    private string GetNpcSystemPrompt(string npcName)
-    {
-        return npcName switch
-        {
-            "Abigail" => @"You are Abigail from Stardew Valley. 
-            You are adventurous, love the occult and dark aesthetics, play video games, and have purple hair. 
-            You sometimes feel stifled by your parents' expectations.
-            You are writing a letter back to the farmer who wrote to you.
-            Keep your response to 3-4 sentences. 
-            Write in a casual, slightly edgy tone.
-            Sign off with '- Abigail'.",
-            
-            "Penny" => @"You are Penny from Stardew Valley.
-            You are gentle, caring, and love books and teaching children.
-            You live in a trailer with your mom Pam and dream of a better life.
-            You are writing a letter back to the farmer who wrote to you.
-            Keep your response to 3-4 sentences.
-            Write in a warm, sincere tone.
-            Sign off with '- Penny'.",
-            
-            "Harvey" => @"You are Harvey from Stardew Valley.
-            You are the town doctor, kind but nervous and awkward.
-            You are passionate about medicine and vintage radio equipment.
-            You are writing a letter back to the farmer who wrote to you.
-            Keep your response to 3-4 sentences.
-            Write in a formal but warm tone.
-            Sign off with '- Dr. Harvey'.",
-            
-            _ => $@"You are {npcName} from Stardew Valley.
-            You are writing a letter back to the farmer who wrote to you.
-            Keep your response to 3-4 sentences.
-            Write in character.
-            Sign off with '- {npcName}'."
-        };
-    }
     
 
     private void handleButtonClick(string name)
@@ -180,13 +99,13 @@ public class MailCreateMenu : IClickableMenu
 
                         try
                         {
-                            var key = await GetOpenAiKeyAsync();
-                            var endpoint = await GetOpenAiEndpointAsync();
-                            var deploymentName = await GetOpenAiDeploymentNameAsync();
+                            var key = await AzureHelper.GetOpenAiKeyAsync();
+                            var endpoint = await AzureHelper.GetOpenAiEndpointAsync();
+                            var deploymentName = await AzureHelper.GetOpenAiDeploymentNameAsync();
                             var client = new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(key));
                             var chatClient = client.GetChatClient(deploymentName);
                             var msg = ContentTextBox.Text.Trim();
-                            string systemPrompt = GetNpcSystemPrompt(_selectedRecipient);
+                            string systemPrompt = AzureHelper.GetNpcSystemPrompt(_selectedRecipient);
 
                             var response = await chatClient.CompleteChatAsync(
                                 new SystemChatMessage(systemPrompt),

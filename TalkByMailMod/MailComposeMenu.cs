@@ -1,8 +1,11 @@
 using StardewUI;         // ViewMenu, IView — both declared in the plain StardewUI namespace
 using StardewUI.Layout;  // LayoutParameters, Length
 using StardewUI.Widgets;
+using TalkByMailMod;
 using TalkByMailMod.UI;
+using StardewValley;
 
+namespace TalkByMailMod;
 public class MailComposeMenu : ViewMenu
 {
     private static MailComposeViewModel? pendingViewModel;
@@ -28,7 +31,8 @@ public class MailComposeMenu : ViewMenu
         textInput.TextChanged += (_, _) => viewModel.LetterText = textInput.Text;
 
         var sendButton = new Button { Text = "Send" };
-        sendButton.Click += (_, _) => viewModel.Send();
+        sendButton.Click += (_, _) => 
+            Game1.activeClickableMenu = new RecipientPickerMenu(recipient => viewModel.SendTo(recipient));
 
         var cancelButton = new Button { Text = "Cancel" };
         cancelButton.Click += (_, _) => viewModel.Cancel();

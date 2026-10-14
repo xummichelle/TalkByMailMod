@@ -1,5 +1,17 @@
 using StardewUI.Graphics;
 using StardewValley;
+using System;
+using System.ClientModel;
+using System.Collections.Generic;
+using System.Linq;
+using Azure.AI.OpenAI;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using OpenAI.Chat;
+using StardewValley.Menus;
+using StardewModdingAPI;
+using StardewUI.Framework;
 
 namespace TalkByMailMod.UI;
 
@@ -19,10 +31,52 @@ public class MailComposeViewModel
         LetterBackground = letterBackground;
     }
 
-    public void Send()
+    public async void SendTo(string recipientName)
     {
         // TODO: hand off SelectedRecipient + LetterText to your AI pipeline / MFM delivery.
-        Game1.exitActiveMenu();
+        
+        ModEntry.ModMonitor.Log($"Selected: {recipientName}", LogLevel.Debug);
+        ModEntry.ModMonitor.Log($"Text: {LetterText}", LogLevel.Debug);
+        // store it for later when sending
+        SelectedRecipient = recipientName;
+        
+        if (ModEntry.MfmApi != null)
+        {
+            string letterId = $"TalkByMailMod.{SelectedRecipient}.{DateTime.Now.Ticks}";
+
+            try
+            {
+                var key = await AzureHelper.GetOpenAiKeyAsync();
+                var endpoint = await AzureHelper.GetOpenAiEndpointAsync();
+                var deploymentName = await AzureHelper.GetOpenAiDeploymentNameAsync();
+                var client = new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(key));
+                var chatClient = client.GetChatClient(deploymentName);
+                var msg = LetterText;
+                string systemPrompt = AzureHelper.GetNpcSystemPrompt(SelectedRecipient);
+
+                var response = await chatClient.CompleteChatAsync(
+                    new SystemChatMessage(systemPrompt),
+                    new UserChatMessage(msg)
+                );
+
+                var mailResponse = response.Value.Content.Last().Text;
+                ModEntry.MfmApi.RegisterLetter(
+                    new ApiLetter
+                    {
+                        Id   = letterId,
+                        Text = mailResponse,
+                        Title = $"Letter for {SelectedRecipient}"
+                    },
+                    condition: (l) => !Game1.player.mailReceived.Contains(l.Id),
+                    callback:  (l) =>  Game1.player.mailReceived.Add(l.Id)
+                );
+            }
+            catch (Exception ex)
+            {
+                // this runs in an async void callback, so an unhandled exception would crash the game
+                ModEntry.ModMonitor.Log($"Couldn't get a reply letter: {ex}", LogLevel.Error);
+            }
+        }
     }
 
     public void Cancel()
