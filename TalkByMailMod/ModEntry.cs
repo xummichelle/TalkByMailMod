@@ -20,6 +20,8 @@ internal sealed class ModEntry : Mod
     public static IMonitor ModMonitor;
     public static IManifest Manifest;
     public static IMailFrameworkModApi MfmApi;
+    /// <summary>The player's settings from config.json.</summary>
+    public static ModConfig Config;
     private IViewEngine viewEngine;
     
     /// <summary>The mod entry point, called after the mod is first loaded.</summary>
@@ -29,7 +31,10 @@ internal sealed class ModEntry : Mod
         ModHelper = helper;
         ModMonitor = Monitor;
         Manifest = ModManifest;
-        
+        Config = helper.ReadConfig<ModConfig>();
+        if (string.IsNullOrWhiteSpace(Config.ApiKey))
+            Monitor.Log("No API key set. Add your Azure OpenAI key to this mod's config.json to get reply letters.", LogLevel.Warn);
+
         helper.Events.GameLoop.GameLaunched += OnGameLaunched;
         helper.Events.Input.ButtonPressed += (sender, e) =>
         {

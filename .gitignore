@@ -22,3 +22,5 @@ packages/
 # Local secrets (never commit these)
 .env
 appsettings.Development.json
+# Player settings, including the API key
+config.json

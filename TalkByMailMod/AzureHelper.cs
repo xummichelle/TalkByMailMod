@@ -1,37 +1,22 @@
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
+using Azure.AI.OpenAI;
+using OpenAI.Chat;
+using System.ClientModel;
 
 namespace TalkByMailMod;
 
-/// <summary>Helpers for talking to Azure: reading secrets from Key Vault and building the NPC prompts.</summary>
+/// <summary>Helpers for talking to Azure OpenAI and building the NPC prompts.</summary>
 public static class AzureHelper
 {
-    /// <summary>Secret values already read from Key Vault, keyed by secret name.</summary>
-    private static readonly Dictionary<string, string> SecretCache = new();
-
-    /// <summary>Get the Azure OpenAI key from Key Vault, signing in with the local Azure login (e.g. az login).</summary>
-    public static Task<string> GetOpenAiKeyAsync() => GetSecretAsync(s => s.OpenAiKeySecretName);
-
-    /// <summary>Get the Azure OpenAI endpoint URL from Key Vault.</summary>
-    public static Task<string> GetOpenAiEndpointAsync() => GetSecretAsync(s => s.OpenAiEndpointSecretName);
-
-    /// <summary>Get the Azure OpenAI deployment name from Key Vault.</summary>
-    public static Task<string> GetOpenAiDeploymentNameAsync() => GetSecretAsync(s => s.OpenAiDeploymentNameSecretName);
-
-    /// <summary>Read a secret from Key Vault, or return it from the cache if it was already read.</summary>
-    /// <param name="pickName">Picks which secret name to read from the Key Vault settings.</param>
-    private static async Task<string> GetSecretAsync(Func<KeyVaultSettings, string> pickName)
+    /// <summary>Create a chat client from the API key, endpoint and deployment name in config.json.</summary>
+    /// <exception cref="InvalidOperationException">config.json is missing a value.</exception>
+    public static ChatClient GetChatClient()
     {
-        var settings = ModEntry.ModHelper.Data.ReadJsonFile<AppSettings>("appsettings.json")
-                       ?? throw new InvalidOperationException("appsettings.json was not found in the mod folder.");
-        string secretName = pickName(settings.KeyVault);
-        if (SecretCache.TryGetValue(secretName, out var cached))
-            return cached;
+        var config = ModEntry.Config;
+        if (string.IsNullOrWhiteSpace(config.ApiKey) || string.IsNullOrWhiteSpace(config.Endpoint) || string.IsNullOrWhiteSpace(config.DeploymentName))
+            throw new InvalidOperationException("Fill in ApiKey, Endpoint and DeploymentName in the mod's config.json, then restart the game.");
 
-        var secretClient = new SecretClient(new Uri(settings.KeyVault.VaultUri), new DefaultAzureCredential());
-        KeyVaultSecret secret = await secretClient.GetSecretAsync(secretName);
-        SecretCache[secretName] = secret.Value;
-        return secret.Value;
+        var client = new AzureOpenAIClient(new Uri(config.Endpoint), new ApiKeyCredential(config.ApiKey));
+        return client.GetChatClient(config.DeploymentName);
     }
 
     /// <summary>Get the system prompt that tells the model how an NPC should write their reply letter.</summary>

@@ -6,6 +6,8 @@
         <Nullable>enable</Nullable>
         <EnableHarmony>true</EnableHarmony>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <!-- config.json holds the player's API key, so never ship it in the release zip -->
+        <IgnoreModFilePaths>config.json</IgnoreModFilePaths>
     </PropertyGroup>
     
     <ItemGroup>
@@ -17,8 +19,6 @@
     
     <ItemGroup>
         <PackageReference Include="Azure.AI.OpenAI" Version="2.1.0" />
-        <PackageReference Include="Azure.Identity" Version="1.13.2" />
-        <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.7.0" />
         <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.4.0" />
     </ItemGroup>
 

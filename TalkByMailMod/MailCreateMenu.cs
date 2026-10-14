@@ -99,11 +99,7 @@ public class MailCreateMenu : IClickableMenu
 
                         try
                         {
-                            var key = await AzureHelper.GetOpenAiKeyAsync();
-                            var endpoint = await AzureHelper.GetOpenAiEndpointAsync();
-                            var deploymentName = await AzureHelper.GetOpenAiDeploymentNameAsync();
-                            var client = new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(key));
-                            var chatClient = client.GetChatClient(deploymentName);
+                            var chatClient = AzureHelper.GetChatClient();
                             var msg = ContentTextBox.Text.Trim();
                             string systemPrompt = AzureHelper.GetNpcSystemPrompt(_selectedRecipient);
 

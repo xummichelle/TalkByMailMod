@@ -46,11 +46,7 @@ public class MailComposeViewModel
 
             try
             {
-                var key = await AzureHelper.GetOpenAiKeyAsync();
-                var endpoint = await AzureHelper.GetOpenAiEndpointAsync();
-                var deploymentName = await AzureHelper.GetOpenAiDeploymentNameAsync();
-                var client = new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(key));
-                var chatClient = client.GetChatClient(deploymentName);
+                var chatClient = AzureHelper.GetChatClient();
                 var msg = LetterText;
                 string systemPrompt = AzureHelper.GetNpcSystemPrompt(SelectedRecipient);
 
